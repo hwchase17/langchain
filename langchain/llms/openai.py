@@ -92,8 +92,8 @@ class OpenAI(LLM, BaseModel):
             "top_p": self.top_p,
             "frequency_penalty": self.frequency_penalty,
             "presence_penalty": self.presence_penalty,
-            "n": self.n,
-            "best_of": self.best_of,
+            # "n": self.n,
+            # "best_of": self.best_of,
         }
         return {**normal_params, **self.model_kwargs}
 
@@ -102,7 +102,13 @@ class OpenAI(LLM, BaseModel):
         """Get the identifying parameters."""
         return {**{"model": self.model_name}, **self._default_params}
 
-    def __call__(self, prompt: str, stop: Optional[List[str]] = None) -> str:
+    def __call__(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        n: Optional[int] = None,
+        best_of: Optional[int] = None,
+    ) -> str:
         """Call out to OpenAI's create endpoint.
 
         Args:
@@ -126,8 +132,13 @@ class OpenAI(LLM, BaseModel):
             if "stop" in params:
                 raise ValueError("`stop` found in both the input and default params.")
             params["stop"] = stop
+        if n is not None:
+            params["n"] = n
+        if best_of is not None:
+            params["best_of"] = best_of
+
         response = self.client.create(model=self.model_name, prompt=prompt, **params)
-        return response["choices"][0]["text"]
+        return [i["text"] for i in response["choices"]]
 
     def modelname_to_contextsize(self, modelname: str) -> int:
         """Calculate the maximum number of tokens possible to generate for a model.
