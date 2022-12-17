@@ -4,14 +4,14 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Extra, root_validator
 
-from langchain.chains.base import Chain
+from langchain.chains.base import MultiVariableChain, SingleVariableChain
 from langchain.input import get_color_mapping, print_text
 
 
-class SequentialChain(Chain, BaseModel):
+class SequentialChain(MultiVariableChain, BaseModel):
     """Chain where the outputs of one step feed directly into next."""
 
-    chains: List[Chain]
+    chains: List[MultiVariableChain]
     input_variables: List[str]
     output_variables: List[str]  #: :meta private:
     return_all: bool = False
@@ -72,17 +72,17 @@ class SequentialChain(Chain, BaseModel):
     def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
         known_values = inputs.copy()
         for i, chain in enumerate(self.chains):
-            outputs = chain(known_values, return_only_outputs=True)
+            outputs = chain.run(return_only_outputs=True, **known_values)
             if self.verbose:
                 print(f"\033[1mChain {i}\033[0m:\n{outputs}\n")
             known_values.update(outputs)
         return {k: known_values[k] for k in self.output_variables}
 
 
-class SimpleSequentialChain(Chain, BaseModel):
+class SimpleSequentialChain(SingleVariableChain, BaseModel):
     """Simple chain where the outputs of one step feed directly into next."""
 
-    chains: List[Chain]
+    chains: List[SingleVariableChain]
     strip_outputs: bool = False
     input_key: str = "input"  #: :meta private:
     output_key: str = "output"  #: :meta private:
@@ -108,22 +108,6 @@ class SimpleSequentialChain(Chain, BaseModel):
         :meta private:
         """
         return [self.output_key]
-
-    @root_validator()
-    def validate_chains(cls, values: Dict) -> Dict:
-        """Validate that chains are all single input/output."""
-        for chain in values["chains"]:
-            if len(chain.input_keys) != 1:
-                raise ValueError(
-                    "Chains used in SimplePipeline should all have one input, got "
-                    f"{chain} with {len(chain.input_keys)} inputs."
-                )
-            if len(chain.output_keys) != 1:
-                raise ValueError(
-                    "Chains used in SimplePipeline should all have one output, got "
-                    f"{chain} with {len(chain.output_keys)} outputs."
-                )
-        return values
 
     def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
         _input = inputs[self.input_key]

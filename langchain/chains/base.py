@@ -115,20 +115,26 @@ class Chain(BaseModel, ABC):
         else:
             return {**inputs, **outputs}
 
+
+class SingleVariableChain(Chain, BaseModel, ABC):
+    """Base interface for chains that take in a single input and single output."""
+
+    def apply(self, input_list: List[str]) -> List[str]:
+        """Call the chain on all inputs in the list."""
+        return [self({self.input_keys[0]: i})[self.output_keys[0]] for i in input_list]
+
+    def run(self, text: str) -> str:
+        """Run text in, text out (if applicable)."""
+        return self({self.input_keys[0]: text})[self.output_keys[0]]
+
+
+class MultiVariableChain(Chain, BaseModel, ABC):
+    """Base interface for chains that take in multiple inputs and/or outputs."""
+
     def apply(self, input_list: List[Dict[str, Any]]) -> List[Dict[str, str]]:
         """Call the chain on all inputs in the list."""
         return [self(inputs) for inputs in input_list]
 
-    def run(self, text: str) -> str:
+    def run(self, return_only_outputs: bool = False, **kwargs: str) -> Dict[str, str]:
         """Run text in, text out (if applicable)."""
-        if len(self.input_keys) != 1:
-            raise ValueError(
-                f"`run` not supported when there is not exactly "
-                f"one input key, got {self.input_keys}."
-            )
-        if len(self.output_keys) != 1:
-            raise ValueError(
-                f"`run` not supported when there is not exactly "
-                f"one output key, got {self.output_keys}."
-            )
-        return self({self.input_keys[0]: text})[self.output_keys[0]]
+        return self(kwargs, return_only_outputs=return_only_outputs)
