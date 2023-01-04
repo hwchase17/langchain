@@ -1,4 +1,6 @@
 """BasePrompt schema definition."""
+from __future__ import annotations
+
 import json
 import re
 from abc import ABC, abstractmethod
@@ -99,6 +101,12 @@ class BasePromptTemplate(BaseModel, ABC):
 
         extra = Extra.forbid
         arbitrary_types_allowed = True
+
+    @abstractmethod
+    def extend_prompt(
+        self, template: str, input_variables: List[str]
+    ) -> BasePromptTemplate:
+        """Extend the prompt with another template/input variables."""
 
     @root_validator()
     def validate_variable_names(cls, values: Dict) -> Dict:
