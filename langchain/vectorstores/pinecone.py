@@ -1,12 +1,15 @@
 """Wrapper around Pinecone vector database."""
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any, Callable, Iterable, List, Optional, Tuple
 
 from langchain.docstore.document import Document
 from langchain.embeddings.base import Embeddings
 from langchain.vectorstores.base import VectorStore
+
+logger = logging.getLogger(__name__)
 
 
 class Pinecone(VectorStore):
@@ -126,8 +129,13 @@ class Pinecone(VectorStore):
         )
         for res in results["matches"]:
             metadata = res["metadata"]
-            text = metadata.pop(self._text_key)
-            docs.append(Document(page_content=text, metadata=metadata))
+            if self._text_key in metadata:
+                text = metadata.pop(self._text_key)
+                docs.append(Document(page_content=text, metadata=metadata))
+            else:
+                logger.warning(
+                    f"Found document with no `{self._text_key}` key. Skipping."
+                )
         return docs
 
     @classmethod
