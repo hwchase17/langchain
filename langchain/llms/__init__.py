@@ -1,6 +1,7 @@
 """Wrappers on top of large language models APIs."""
 from typing import Dict, Type
 
+from langchain.llms.accelerate import Accelerate
 from langchain.llms.ai21 import AI21
 from langchain.llms.base import BaseLLM
 from langchain.llms.cohere import Cohere
@@ -17,6 +18,7 @@ __all__ = [
     "HuggingFacePipeline",
     "AI21",
     "AzureOpenAI",
+    "Accelerate",
 ]
 
 type_to_cls_dict: Dict[str, Type[BaseLLM]] = {
@@ -27,4 +29,5 @@ type_to_cls_dict: Dict[str, Type[BaseLLM]] = {
     "openai": OpenAI,
     "huggingface_pipeline": HuggingFacePipeline,
     "azure": AzureOpenAI,
+    "accelerate": Accelerate,
 }
